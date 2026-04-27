@@ -25,7 +25,7 @@ public class LoginTests : PlaywrightTestBase
     {
         var login = new LoginPage(Page);
         await login.NavigateAsync(Settings.BaseUrl);
-        await login.LoginAsync("invalid@email.com", "WrongPassword123!");
+        await login.AttemptLoginAsync("invalid@email.com", "WrongPassword123!");
 
         Assert.That(await login.HasErrorMessageAsync(), Is.True,
             "Expected an error message for invalid credentials");

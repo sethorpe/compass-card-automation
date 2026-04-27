@@ -26,6 +26,13 @@ public class LoginPage : BasePage
         await Page.WaitForURLAsync("**/ManageCards");
     }
 
+    public async Task AttemptLoginAsync(string username, string password)
+    {
+        await EmailField.FillAsync(username);
+        await PasswordField.FillAsync(password);
+        await SignInButton.ClickAsync();
+    }
+
     public async Task<bool> HasErrorMessageAsync()
     {
         try

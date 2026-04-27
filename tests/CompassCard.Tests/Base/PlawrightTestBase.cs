@@ -64,6 +64,20 @@ public abstract class PlaywrightTestBase
     protected async Task NavigateAsAuthenticatedUserAsync()
     {
         await Page.GotoAsync($"{Settings.BaseUrl}/ManageCards");
-        await Page.WaitForURLAsync("**/ManageCards");
+
+        try
+        {
+            await Page.WaitForURLAsync("**/ManageCards",
+                new PageWaitForURLOptions { Timeout = 10_000 });
+        }
+        catch (TimeoutException)
+        {
+            // Session didn't work
+            throw new Exception(
+                $"Session state failed - site redirected to {Page.Url} instead of ManageCards. " +
+                "The session file may be expired or invalid in this environment. " +
+                "Re-run SaveSession locally and update the COMPASS_SESSION secret.");
+        }
+        
     }
 }
