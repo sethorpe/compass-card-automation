@@ -8,6 +8,7 @@ namespace CompassCard.Tests.Tests;
 
 [TestFixture]
 [Category("CardUsage")]
+[Explicit("Requires valid session state. Run locally only - session cannot be replayed from CI.")]
 public class CardUsageTests : PlaywrightTestBase
 {
     private const string TestDownloadPath = "test-downloads";

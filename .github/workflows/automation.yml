@@ -2,8 +2,8 @@ name: Compass Card Reload Report
 
 on:
   schedule:
-    - cron: '0 0 1 * *'   # Midnight UTC on the 1st of every month
-  workflow_dispatch:        # Manual trigger from Actions tab
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
 
 jobs:
   compass-automation:
@@ -29,14 +29,7 @@ jobs:
       - name: Install Firefox
         run: playwright install --with-deps firefox
 
-      # Decode the session file from GitHub Secrets
-      # This avoids logging in entirely — no CAPTCHA risk in CI
-      - name: Restore session file
-        run: |
-          mkdir -p auth
-          echo "${{ secrets.COMPASS_SESSION }}" | base64 --decode > auth/session.json
-
-      # Unit tests — no browser, no credentials needed
+      # Unit tests only in CI — E2E tests are local-only (see [Explicit] on test fixtures)
       - name: Run Unit Tests
         run: |
           dotnet test tests/CompassCard.Tests \
@@ -45,21 +38,7 @@ jobs:
             --logger "trx;LogFileName=unit-results.trx" \
             --results-directory ./test-results
 
-      # E2E tests — uses session file, skips login
-      - name: Run E2E Tests
-        env:
-          COMPASS_USERNAME: ${{ secrets.COMPASS_USERNAME }}
-          COMPASS_PASSWORD: ${{ secrets.COMPASS_PASSWORD }}
-          COMPASS_CARDNUMBER: ${{ secrets.COMPASS_CARDNUMBER }}
-          Headless: true
-        run: |
-          dotnet test tests/CompassCard.Tests \
-            --no-build --configuration Release \
-            --filter "Category!=Unit" \
-            --logger "trx;LogFileName=e2e-results.trx" \
-            --results-directory ./test-results
-
-      # Console app — the actual job
+      # Console app — attempts session load, falls back to direct login
       - name: Run Console Automation
         env:
           COMPASS_USERNAME: ${{ secrets.COMPASS_USERNAME }}

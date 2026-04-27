@@ -52,26 +52,28 @@ if (File.Exists(sessionPath))
 }
 
 var context = await browser.NewContextAsync(contextOptions);
-
 var page = await context.NewPageAsync();
 
 // -- Automation -----------------------------------------------------
 try
 {
-    if (!File.Exists(sessionPath))
-    {
-        // Step 1: Login
-        Console.WriteLine("-> Logging in...");
-        var loginPage = new LoginPage(page);
-        await loginPage.NavigateAsync(settings.BaseUrl);
-        await loginPage.LoginAsync(settings.Username, settings.Password);
-        Console.WriteLine("Logged in");    
-    }
-    else
+    try
     {
         // Session loaded - navigate directly to ManageCards
         await page.GotoAsync($"{settings.BaseUrl}/ManageCards");
-        await page.WaitForURLAsync("**/ManageCards");
+        await page.WaitForURLAsync("**/ManageCards",
+            new PageWaitForURLOptions { Timeout = 10_000 });
+
+        Console.WriteLine("Session valid - proceeding");
+    }
+    catch (TimeoutException)
+    {
+        // Session rejected (likely IP mismatch in CI) - fall back to login
+        Console.WriteLine("-> Session invalid or expired - attempting login...");
+        var loginPage = new LoginPage(page);
+        await loginPage.NavigateAsync(settings.BaseUrl);
+        await loginPage.LoginAsync(settings.Username, settings.Password);
+        Console.WriteLine("Logged in");
     }
 
     // Step 2: Select card and navigate to Card Usage
