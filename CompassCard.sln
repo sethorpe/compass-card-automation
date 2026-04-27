@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F3E871A1-0658-4BD9-B156-D5CA75F3F423}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompassCard.Console", "src\CompassCard.Console\CompassCard.Console.csproj", "{B2034A4B-5CA7-459A-93EA-B638CDC3D05B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C0F26B53-0336-4F86-8035-95E8E81570F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompassCard.Tests", "tests\CompassCard.Tests\CompassCard.Tests.csproj", "{9058D45E-EE79-4021-B201-F21A27AEAC2F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B2034A4B-5CA7-459A-93EA-B638CDC3D05B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2034A4B-5CA7-459A-93EA-B638CDC3D05B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2034A4B-5CA7-459A-93EA-B638CDC3D05B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2034A4B-5CA7-459A-93EA-B638CDC3D05B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9058D45E-EE79-4021-B201-F21A27AEAC2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9058D45E-EE79-4021-B201-F21A27AEAC2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9058D45E-EE79-4021-B201-F21A27AEAC2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9058D45E-EE79-4021-B201-F21A27AEAC2F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B2034A4B-5CA7-459A-93EA-B638CDC3D05B} = {F3E871A1-0658-4BD9-B156-D5CA75F3F423}
+		{9058D45E-EE79-4021-B201-F21A27AEAC2F} = {C0F26B53-0336-4F86-8035-95E8E81570F0}
+	EndGlobalSection
+EndGlobal
