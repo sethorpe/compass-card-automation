@@ -9,5 +9,5 @@ public class AppSettings
     public string CardNumber { get; set; } = string.Empty;
     public string DownloadPath { get; set; } = "downloads";
     public string ReportOutputPath { get; set; } = "reports/report.txt";
-    public bool Headless { get; set; } = false;
+    public bool Headless { get; set; } = true;
 }

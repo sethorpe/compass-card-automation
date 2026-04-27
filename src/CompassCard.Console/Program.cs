@@ -35,7 +35,6 @@ await using var browser = await playwright.Firefox.LaunchAsync(new BrowserTypeLa
 {
     Headless = settings.Headless,
     SlowMo = settings.Headless ? 0 : 80, // Slow down for local visual debugging
-    // Channel = "chrome",
 });
 
 const string sessionPath = "auth/session.json";
