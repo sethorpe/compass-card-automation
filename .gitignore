@@ -56,3 +56,4 @@ Icon?
 appsettings.local.json
 .env
 .env.local
+/auth/
