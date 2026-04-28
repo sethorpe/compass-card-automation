@@ -7,7 +7,6 @@ namespace CompassCard.Tests.Tests;
 
 [TestFixture]
 [Category("Login")]
-[Explicit("Login page may present CAPTCHA in CI. Run locally only.")]
 public class LoginTests : PlaywrightTestBase
 {
     [Test]

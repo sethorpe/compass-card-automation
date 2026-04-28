@@ -56,6 +56,3 @@ Icon?
 appsettings.local.json
 .env
 .env.local
-
-# Session state - contains auth cookies, never commit
-/auth/

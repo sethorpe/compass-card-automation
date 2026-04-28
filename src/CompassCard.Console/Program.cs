@@ -4,25 +4,17 @@ using CompassCard.Console.Config;
 using CompassCard.Console.Pages;
 using CompassCard.Console.Services;
 
-// Entry point - handles both normal run and session-save mode
-if (args.Contains("--save-session"))
-{
-    await SaveSession.RunAsync();
-    return 0;
-}
-
 // -- Configuration ----------------------------------------------
-// Credentials MUST come from environment variables - never hardcoded
 var config = new ConfigurationBuilder()
-    .AddEnvironmentVariables(prefix: "COMPASS_") // COMPASS_USERNAME, COMPASS_PASSWORD
-    .AddEnvironmentVariables() // Fallback: BaseUrl, Headless, etc
+    .AddEnvironmentVariables(prefix: "COMPASS_")
+    .AddEnvironmentVariables()
     .Build();
 
 var settings = config.Get<AppSettings>() ?? new AppSettings();
 
 if (string.IsNullOrWhiteSpace(settings.Username) || string.IsNullOrWhiteSpace(settings.Password))
 {
-    Console.Error.WriteLine("COMPASS_USERNAME and COMPASS_PASSWORD environment variable must be set.");
+    Console.Error.WriteLine("COMPASS_USERNAME and COMPASS_PASSWORD environment variables must be set.");
     return 1;
 }
 
@@ -34,54 +26,32 @@ using var playwright = await Playwright.CreateAsync();
 await using var browser = await playwright.Firefox.LaunchAsync(new BrowserTypeLaunchOptions
 {
     Headless = settings.Headless,
-    SlowMo = settings.Headless ? 0 : 80, // Slow down for local visual debugging
+    SlowMo = settings.Headless ? 0 : 80
 });
 
-const string sessionPath = "auth/session.json";
-
-var contextOptions = new BrowserNewContextOptions
+var context = await browser.NewContextAsync(new BrowserNewContextOptions
 {
     AcceptDownloads = true
-};
+});
 
-// Load saved session if it exists - skips login entirely
-if (File.Exists(sessionPath))
-{
-    contextOptions.StorageStatePath = sessionPath;
-    Console.WriteLine("Loaded saved session - skipping login");
-}
-
-var context = await browser.NewContextAsync(contextOptions);
 var page = await context.NewPageAsync();
 
 // -- Automation -----------------------------------------------------
 try
 {
-    try
-    {
-        // Session loaded - navigate directly to ManageCards
-        await page.GotoAsync($"{settings.BaseUrl}/ManageCards");
-        await page.WaitForURLAsync("**/ManageCards",
-            new PageWaitForURLOptions { Timeout = 10_000 });
-
-        Console.WriteLine("Session valid - proceeding");
-    }
-    catch (TimeoutException)
-    {
-        // Session rejected (likely IP mismatch in CI) - fall back to login
-        Console.WriteLine("-> Session invalid or expired - attempting login...");
-        var loginPage = new LoginPage(page);
-        await loginPage.NavigateAsync(settings.BaseUrl);
-        await loginPage.LoginAsync(settings.Username, settings.Password);
-        Console.WriteLine("Logged in");
-    }
+    // Step 1: Login
+    Console.WriteLine("-> Logging in...");
+    var loginPage = new LoginPage(page);
+    await loginPage.NavigateAsync(settings.BaseUrl);
+    await loginPage.LoginAsync(settings.Username, settings.Password);
+    Console.WriteLine("Logged in");
 
     // Step 2: Select card and navigate to Card Usage
     Console.WriteLine("-> Navigating to Card Usage...");
     var manageCardsPage = new ManageCardsPage(page);
     await manageCardsPage.SelectCardAsync(settings.CardNumber);
     await manageCardsPage.NavigateToCardUsageAsync();
-    Console.WriteLine("On Card Usage — Detailed View");
+    Console.WriteLine("On Card Usage - Detailed View");
 
     // Step 3: Set date range and filter to Payments (reloads) only
     Console.WriteLine("-> Configuring filters...");
@@ -93,25 +63,22 @@ try
     // Step 4: Download
     Console.WriteLine("-> Downloading CSV...");
     var csvPath = await cardUsagePage.DownloadCsvAsync(settings.DownloadPath);
-    
+
     // Step 5: Parse
     Console.WriteLine("-> Parsing CSV...");
-    var parser = new CsvParserService();
-    var records = parser.Parse(csvPath);
-    
+    var records = new CsvParserService().Parse(csvPath);
+
     // Step 6: Write report
     Console.WriteLine("-> Writing report...");
-    var writer = new ReportWriterService();
-    writer.WriteReport(records, settings.ReportOutputPath);
-    
+    new ReportWriterService().WriteReport(records, settings.ReportOutputPath);
+
     Console.WriteLine($"\nComplete! [{DateTime.UtcNow:u}]");
     return 0;
 }
 catch (Exception ex)
 {
     Console.Error.WriteLine($"\nAutomation failed: {ex.Message}");
-    
-    // Save a screenshot on failure
+
     var screenshotPath = $"reports/failure-{DateTime.UtcNow:yyyyMMdd-HHmmss}.png";
     Directory.CreateDirectory("reports");
     await page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath });

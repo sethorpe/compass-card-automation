@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
 using CompassCard.Console.Config;
+using CompassCard.Console.Pages;
 
 namespace CompassCard.Tests.Base;
 
@@ -12,9 +13,6 @@ public abstract class PlaywrightTestBase
     protected IBrowserContext Context { get; private set; } = null!;
     protected IPage Page { get; private set; } = null!;
     protected AppSettings Settings { get; private set; } = null!;
-
-    // Shared session path — same location as console app
-    protected const string SessionPath = "auth/session.json";
 
     [OneTimeSetUp]
     public void LoadSettings()
@@ -36,16 +34,11 @@ public abstract class PlaywrightTestBase
             Headless = Settings.Headless
         });
 
-        var contextOptions = new BrowserNewContextOptions
+        Context = await _browser.NewContextAsync(new BrowserNewContextOptions
         {
             AcceptDownloads = true
-        };
+        });
 
-        // Load saved session if available — same logic as console app
-        if (File.Exists(SessionPath))
-            contextOptions.StorageStatePath = SessionPath;
-
-        Context = await _browser.NewContextAsync(contextOptions);
         Page = await Context.NewPageAsync();
     }
 
@@ -57,27 +50,10 @@ public abstract class PlaywrightTestBase
         _playwright.Dispose();
     }
 
-    /// <summary>
-    /// Navigates to ManageCards using session state.
-    /// Call this at the start of any test that requires authentication.
-    /// </summary>
     protected async Task NavigateAsAuthenticatedUserAsync()
     {
-        await Page.GotoAsync($"{Settings.BaseUrl}/ManageCards");
-
-        try
-        {
-            await Page.WaitForURLAsync("**/ManageCards",
-                new PageWaitForURLOptions { Timeout = 10_000 });
-        }
-        catch (TimeoutException)
-        {
-            // Session didn't work
-            throw new Exception(
-                $"Session state failed - site redirected to {Page.Url} instead of ManageCards. " +
-                "The session file may be expired or invalid in this environment. " +
-                "Re-run SaveSession locally and update the COMPASS_SESSION secret.");
-        }
-        
+        var loginPage = new LoginPage(Page);
+        await loginPage.NavigateAsync(Settings.BaseUrl);
+        await loginPage.LoginAsync(Settings.Username, Settings.Password);
     }
 }
