@@ -41,6 +41,7 @@ Icon?
 # Runtime outputs — generated on each run
 /downloads/
 /reports/
+/logs/
 /test-downloads/
 *.csv
 

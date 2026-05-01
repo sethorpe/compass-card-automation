@@ -59,6 +59,7 @@ jobs:
           path: |
             reports/report.txt
             reports/failure-*.png
+            logs/
           retention-days: 60
 
       - name: Upload Test Results

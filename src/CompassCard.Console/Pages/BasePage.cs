@@ -1,15 +1,18 @@
 using Microsoft.Playwright;
+using Serilog;
 
 namespace CompassCard.Console.Pages;
 
 public abstract class BasePage
 {
     protected readonly IPage Page;
+    protected readonly ILogger? Logger;
     protected const int DefaultTimeoutMs = 15_000;
 
-    protected BasePage(IPage page)
+    protected BasePage(IPage page, ILogger? logger = null)
     {
         Page = page;
+        Logger = logger;
     }
 
     /// <summary>
