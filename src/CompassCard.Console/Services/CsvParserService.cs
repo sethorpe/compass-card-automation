@@ -20,8 +20,6 @@ public class CsvParserService
         using var reader = new StreamReader(filePath, detectEncodingFromByteOrderMarks: true);
         using var csv = new CsvReader(reader, config);
 
-        var records = csv.GetRecords<CompassReloadRecord>().ToList();
-        System.Console.WriteLine($"Parsed:{records.Count} sales transaction records");
-        return records;
+        return csv.GetRecords<CompassReloadRecord>().ToList();
     }    
 }

@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
+using Serilog;
 using CompassCard.Console.Config;
 using CompassCard.Console.Pages;
 using CompassCard.Console.Services;
@@ -32,9 +33,29 @@ if (string.IsNullOrWhiteSpace(settings.Username) || string.IsNullOrWhiteSpace(se
     return 1;
 }
 
-Console.WriteLine($"Starting Compass Card automation [{DateTime.UtcNow:u}]");
+// -- Logging -------------------------------------------------------
+var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss");
+var logPath = Path.Combine("logs", $"compass_automation_{timestamp}.log");
+Directory.CreateDirectory("logs");
+
+const string outputTemplate =
+    "{Timestamp:yyyy-MM-dd HH:mm:ss} - {SourceContext} - {Level:u3} - {Message:lj}{NewLine}{Exception}";
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console(outputTemplate: outputTemplate)
+    .WriteTo.File(logPath, outputTemplate: outputTemplate)
+    .CreateLogger();
+
+var log = Log.ForContext("SourceContext", "compass_automation.main");
+log.Information("Logging to file: {LogPath}", logPath);
+
+log.Information("============================================================");
+log.Information("Compass Card Automation Started");
+log.Information("============================================================");
 
 // -- Playwright ---------------------------------------------------
+log.Information("Launching browser...");
 using var playwright = await Playwright.CreateAsync();
 
 await using var browser = await playwright.Firefox.LaunchAsync(new BrowserTypeLaunchOptions
@@ -42,6 +63,7 @@ await using var browser = await playwright.Firefox.LaunchAsync(new BrowserTypeLa
     Headless = settings.Headless,
     SlowMo = settings.Headless ? 0 : 80
 });
+log.Debug("Browser launched: firefox");
 
 var context = await browser.NewContextAsync(new BrowserNewContextOptions
 {
@@ -49,54 +71,63 @@ var context = await browser.NewContextAsync(new BrowserNewContextOptions
 });
 
 var page = await context.NewPageAsync();
+log.Debug("Browser context and page created");
 
 // -- Automation -----------------------------------------------------
 try
 {
     // Step 1: Login
-    Console.WriteLine("-> Logging in...");
-    var loginPage = new LoginPage(page);
+    log.Information("Logging in...");
+    var loginPage = new LoginPage(page, Log.ForContext("SourceContext", "compass_automation.login"));
     await loginPage.NavigateAsync(settings.BaseUrl);
     await loginPage.LoginAsync(settings.Username, settings.Password);
-    Console.WriteLine("Logged in");
+    log.Information("Login successful");
 
     // Step 2: Select card and navigate to Card Usage
-    Console.WriteLine("-> Navigating to Card Usage...");
-    var manageCardsPage = new ManageCardsPage(page);
+    log.Information("Navigating to Card Usage...");
+    var manageCardsPage = new ManageCardsPage(page, Log.ForContext("SourceContext", "compass_automation.manage_cards"));
     await manageCardsPage.SelectCardAsync(settings.CardNumber);
     await manageCardsPage.NavigateToCardUsageAsync();
-    Console.WriteLine("On Card Usage - Detailed View");
+    log.Information("On Card Usage - Detailed View");
 
     // Step 3: Set date range and filter to Payments (reloads) only
-    Console.WriteLine("-> Configuring filters...");
-    var cardUsagePage = new CardUsagePage(page);
+    log.Information("Configuring filters...");
+    var cardUsagePage = new CardUsagePage(page, Log.ForContext("SourceContext", "compass_automation.card_usage"));
     await cardUsagePage.SetPreviousMonthDateRangeAsync();
     await cardUsagePage.SelectPaymentsOnlyAsync();
-    Console.WriteLine("Filters applied: previous month, payments only");
+    log.Information("Filters applied: previous month, payments only");
 
     // Step 4: Download
-    Console.WriteLine("-> Downloading CSV...");
+    log.Information("Downloading CSV...");
     var csvPath = await cardUsagePage.DownloadCsvAsync(settings.DownloadPath);
 
     // Step 5: Parse
-    Console.WriteLine("-> Parsing CSV...");
+    log.Debug("Parsing CSV...");
     var records = new CsvParserService().Parse(csvPath);
+    log.Debug("Parsed {Count} reload records", records.Count);
 
     // Step 6: Write report
-    Console.WriteLine("-> Writing report...");
+    log.Information("Writing report...");
     new ReportWriterService().WriteReport(records, settings.ReportOutputPath);
+    log.Debug("Report written: {Path}", settings.ReportOutputPath);
 
-    Console.WriteLine($"\nComplete! [{DateTime.UtcNow:u}]");
+    log.Information("============================================================");
+    log.Information("Automation completed successfully");
+    log.Information("============================================================");
     return 0;
 }
 catch (Exception ex)
 {
-    Console.Error.WriteLine($"\nAutomation failed: {ex.Message}");
+    log.Error(ex, "Automation failed: {Message}", ex.Message);
 
     var screenshotPath = $"reports/failure-{DateTime.UtcNow:yyyyMMdd-HHmmss}.png";
     Directory.CreateDirectory("reports");
     await page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath });
-    Console.Error.WriteLine($"Screenshot saved: {screenshotPath}");
+    log.Error("Screenshot saved: {ScreenshotPath}", screenshotPath);
 
     return 1;
+}
+finally
+{
+    Log.CloseAndFlush();
 }

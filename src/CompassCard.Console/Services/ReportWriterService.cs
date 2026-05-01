@@ -47,6 +47,5 @@ public class ReportWriterService
         lines.Add("══════════════════════════════════════════");
 
         File.WriteAllLines(outputPath, lines);
-        System.Console.WriteLine($"Report written: {outputPath}");
     }
 }

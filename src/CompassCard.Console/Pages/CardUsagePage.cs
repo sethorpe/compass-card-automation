@@ -1,34 +1,35 @@
 using Microsoft.Playwright;
+using Serilog;
 
 namespace CompassCard.Console.Pages;
 
 public class CardUsagePage : BasePage
 {
-    private ILocator StartDateInput => 
+    private ILocator StartDateInput =>
         Page.Locator("#Content_ManageCard_compCardHistory_txtStartDate");
 
-    private ILocator EndDateInput => 
+    private ILocator EndDateInput =>
         Page.Locator("#Content_ManageCard_compCardHistory_txtEndDate");
 
-    private ILocator ShowDateHistoryDropdown => 
+    private ILocator ShowDateHistoryDropdown =>
         Page.Locator("#Content_ManageCard_compCardHistory_lstDate");
 
-    private ILocator CardUsageLabel => 
+    private ILocator CardUsageLabel =>
         Page.Locator("label[for='Content_ManageCard_compCardHistory_CheckBoxListDataOptionUsage']");
 
-    private ILocator PaymentsLabel => 
+    private ILocator PaymentsLabel =>
         Page.Locator("label[for='Content_ManageCard_compCardHistory_CheckBoxListDataOptionPayment']");
 
-    private ILocator CardUsageCheckbox => 
+    private ILocator CardUsageCheckbox =>
         Page.Locator("#Content_ManageCard_compCardHistory_CheckBoxListDataOptionUsage");
 
-    private ILocator PaymentsCheckbox => 
+    private ILocator PaymentsCheckbox =>
         Page.Locator("#Content_ManageCard_compCardHistory_CheckBoxListDataOptionPayment");
 
-    private ILocator DownloadCsvLink => 
+    private ILocator DownloadCsvLink =>
         Page.GetByRole(AriaRole.Link, new() { Name = "Download CSV" });
 
-    public CardUsagePage(IPage page) : base(page) { }
+    public CardUsagePage(IPage page, ILogger? logger = null) : base(page, logger) { }
 
     /// <summary>
     /// Sets the date range to the previous calendar month.
@@ -38,6 +39,7 @@ public class CardUsagePage : BasePage
     public async Task SetPreviousMonthDateRangeAsync()
     {
         var (startDate, endDate) = GetPreviousMonthRange();
+        Logger?.Debug("Setting date range: {Start} to {End}", startDate.ToString("MMM-dd-yyyy"), endDate.ToString("MMM-dd-yyyy"));
 
         await ShowDateHistoryDropdown.SelectOptionAsync(new[] { "custom" });
         await WaitForPageReadyAsync();
@@ -53,6 +55,7 @@ public class CardUsagePage : BasePage
             "Content_ManageCard_compCardHistory_txtEndDate",
             endDate.ToString("MMM-dd-yyyy"));
         await WaitForPageReadyAsync();
+        Logger?.Information("Date range set: {Start} to {End}", startDate.ToString("MMM-dd-yyyy"), endDate.ToString("MMM-dd-yyyy"));
     }
 
     /// <summary>
@@ -64,6 +67,7 @@ public class CardUsagePage : BasePage
     {
         if (await CardUsageCheckbox.IsCheckedAsync())
         {
+            Logger?.Debug("Unchecking Card Usage filter...");
             await CardUsageLabel.ClickAsync();
             await WaitForPageReadyAsync();
             await Task.Delay(1000);   // Allow postback to settle
@@ -71,14 +75,18 @@ public class CardUsagePage : BasePage
 
         if (!await PaymentsCheckbox.IsCheckedAsync())
         {
+            Logger?.Debug("Checking Payments filter...");
             await PaymentsLabel.ClickAsync();
             await WaitForPageReadyAsync();
             await Task.Delay(1000);   // Allow postback to settle
         }
+
+        Logger?.Information("Payments filter applied");
     }
 
     public async Task<string> DownloadCsvAsync(string downloadPath)
     {
+        Logger?.Debug("Initiating CSV download...");
         Directory.CreateDirectory(downloadPath);
 
         var downloadTask = Page.WaitForDownloadAsync();
@@ -88,7 +96,7 @@ public class CardUsagePage : BasePage
         var filePath = Path.Combine(downloadPath, download.SuggestedFilename);
         await download.SaveAsAsync(filePath);
 
-        System.Console.WriteLine($"Downloaded: {filePath}");
+        Logger?.Information("CSV downloaded: {FilePath}", filePath);
         return filePath;
     }
 
