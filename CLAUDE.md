@@ -58,7 +58,7 @@ Conventional Commits strictly. Allowed prefixes: `feat`, `fix`, `chore`, `refact
 
 ## Git workflow
 
-branch → commit → `git push origin <branch>` → `gh pr create` → `gh pr merge` → `git checkout main` → `git pull`
+branch → commit → `git push origin <branch>` → `gh pr create` → `gh pr merge` → `git checkout main` → `git pull` → `git branch -d <branch>`
 
 ## Known issues
 
