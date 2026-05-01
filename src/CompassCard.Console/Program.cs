@@ -6,9 +6,23 @@ using CompassCard.Console.Services;
 
 // -- Configuration ----------------------------------------------
 var config = new ConfigurationBuilder()
+    .SetBasePath(FindRepoRoot())
+    .AddJsonFile("appsettings.Local.json", optional: true)
     .AddEnvironmentVariables(prefix: "COMPASS_")
     .AddEnvironmentVariables()
     .Build();
+
+static string FindRepoRoot()
+{
+    var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (dir != null)
+    {
+        if (Directory.Exists(Path.Combine(dir.FullName, ".git")))
+            return dir.FullName;
+        dir = dir.Parent;
+    }
+    return Directory.GetCurrentDirectory();
+}
 
 var settings = config.Get<AppSettings>() ?? new AppSettings();
 

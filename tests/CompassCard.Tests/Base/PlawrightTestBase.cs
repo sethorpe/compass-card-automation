@@ -18,6 +18,8 @@ public abstract class PlaywrightTestBase
     public void LoadSettings()
     {
         Settings = new ConfigurationBuilder()
+            .SetBasePath(FindRepoRoot())
+            .AddJsonFile("appsettings.Local.json", optional: true)
             .AddEnvironmentVariables(prefix: "COMPASS_")
             .AddEnvironmentVariables()
             .Build()
@@ -55,5 +57,17 @@ public abstract class PlaywrightTestBase
         var loginPage = new LoginPage(Page);
         await loginPage.NavigateAsync(Settings.BaseUrl);
         await loginPage.LoginAsync(Settings.Username, Settings.Password);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (dir != null)
+        {
+            if (Directory.Exists(Path.Combine(dir.FullName, ".git")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return Directory.GetCurrentDirectory();
     }
 }
