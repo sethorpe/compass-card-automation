@@ -43,6 +43,7 @@ compass-card-automation/
 | Browser Automation | Microsoft Playwright |
 | Test Framework | NUnit |
 | CSV Parsing | CsvHelper |
+| Logging | Serilog |
 | CI/CD | GitHub Actions |
 | Browser | Firefox |
 
@@ -50,7 +51,7 @@ compass-card-automation/
 
 ## How It Works
 
-1. **Login** — authenticates with Compass Card using credentials stored as environment variables
+1. **Login** — authenticates with Compass Card using credentials from `appsettings.Local.json` (locally) or GitHub Secrets (CI)
 2. **Navigate** — selects the target card and opens the Card Usage — Detailed View
 3. **Filter** — sets the date range to the previous calendar month, selects Payments (reloads) only
 4. **Download** — downloads the filtered transaction history as a CSV
@@ -70,15 +71,19 @@ dotnet tool install --global Microsoft.Playwright.CLI
 playwright install firefox
 ```
 
-### Environment Variables
+### Credentials
 
-| Variable | Description |
-|---|---|
-| `COMPASS_USERNAME` | compasscard.ca login email |
-| `COMPASS_PASSWORD` | compasscard.ca password |
-| `COMPASS_CARDNUMBER` | Card number as it appears on the site |
+Copy `appsettings.example.json` to `appsettings.Local.json` at the repo root and fill in your values:
 
-Set these in Rider via **Run → Edit Configurations → Environment Variables**.
+```json
+{
+  "Username": "your-email@example.com",
+  "Password": "your-password",
+  "CardNumber": "your-card-number"
+}
+```
+
+`appsettings.Local.json` is gitignored and takes precedence over environment variables locally. In CI, credentials are supplied via GitHub Secrets (see [CI/CD](#cicd)).
 
 ### Running the Console App
 
@@ -86,7 +91,7 @@ Set these in Rider via **Run → Edit Configurations → Environment Variables**
 dotnet run --project src/CompassCard.Console
 ```
 
-> Set `Headless = false` in `AppSettings.cs` during development to watch the browser run.
+> Set `Headless = false` in `AppSettings.cs` during development to watch the browser run. Logs are written to `logs/compass_automation_{timestamp}.log` on every run.
 
 ### Running the Tests
 
@@ -113,7 +118,7 @@ The GitHub Actions workflow runs automatically on the **1st of every month at mi
 2. Install Playwright + Firefox
 3. Run unit tests
 4. Run the console automation
-5. Upload `report.txt` as a downloadable artifact (retained for 60 days)
+5. Upload `report.txt` and `logs/` as downloadable artifacts (retained for 60 days)
 
 ### Required GitHub Secrets
 
