@@ -28,8 +28,18 @@ public class LoginPage : BasePage
         await PasswordField.FillAsync(password);
         Logger?.Debug("Login form submitted, waiting for redirect...");
         await SignInButton.ClickAsync();
-        await Page.WaitForURLAsync("**/ManageCards");
-        Logger?.Information("Login successful, redirected to ManageCards");
+        await WaitForPageReadyAsync();
+
+        if (Page.Url.Contains("ManageCards", StringComparison.OrdinalIgnoreCase))
+        {
+            Logger?.Information("Login successful, redirected to ManageCards");
+            return;
+        }
+
+        if (await Page.Locator("h1").Filter(new() { HasText = "500 Error" }).CountAsync() > 0)
+            throw new InvalidOperationException("Login blocked: site returned a 500 error");
+
+        throw new InvalidOperationException($"Login failed: unexpected page after sign in ({Page.Url})");
     }
 
     public async Task AttemptLoginAsync(string username, string password)
